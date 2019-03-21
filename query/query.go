@@ -110,6 +110,7 @@ type Latency struct {
 
 type params struct {
 	Alias      string
+	Type       string
 	Count      int
 	Offset     int
 	AfterUID   uint64
@@ -945,6 +946,7 @@ func newGraph(ctx context.Context, gq *gql.GraphQuery) (*SubGraph, error) {
 	// The attr at root (if present) would stand for the source functions attr.
 	args := params{
 		Alias:         gq.Alias,
+		Type:          gq.Type,
 		Cascade:       gq.Cascade,
 		GetUid:        isDebug(ctx),
 		IgnoreReflex:  gq.IgnoreReflex,
@@ -2699,12 +2701,13 @@ func (req *QueryRequest) ProcessQuery(ctx context.Context) (err error) {
 			return x.Errorf("Query couldn't be executed")
 		}
 	}
-	req.Latency.Processing += time.Since(execStart)
 
 	// If we had a shortestPath SG, append it to the result.
 	if len(shortestSg) != 0 {
 		req.Subgraphs = append(req.Subgraphs, shortestSg...)
 	}
+
+	req.Latency.Processing += time.Since(execStart)
 	return nil
 }
 
