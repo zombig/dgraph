@@ -35,6 +35,7 @@ import (
 	"github.com/dgraph-io/dgraph/gql"
 	"github.com/dgraph-io/dgraph/protos/pb"
 	"github.com/dgraph-io/dgraph/task"
+	"github.com/dgraph-io/dgraph/schema"
 	"github.com/dgraph-io/dgraph/types"
 	"github.com/dgraph-io/dgraph/types/facets"
 	"github.com/dgraph-io/dgraph/worker"
@@ -2707,6 +2708,12 @@ func (req *QueryRequest) ProcessQuery(ctx context.Context) (err error) {
 		req.Subgraphs = append(req.Subgraphs, shortestSg...)
 	}
 
+	for _, sg := range req.Subgraphs {
+		sg.recurse(func(sg *SubGraph) {
+			glog.Infof("Subgraph %#v", sg)
+		})
+	}
+
 	req.Latency.Processing += time.Since(execStart)
 	return nil
 }
@@ -2761,4 +2768,47 @@ func StripBlankNode(mp map[string]uint64) map[string]uint64 {
 		}
 	}
 	return temp
+}
+
+func (sg *SubGraph) filterTypePredicates() {
+	if len(sg.Params.Type) == 0 {
+		return
+	}
+
+	typeDef, exists := schema.State().GetType(sg.Params.Type)
+	if !exists {
+		return
+	}
+
+	predsMap := make(map[string]pb.Posting_ValType)
+	
+}
+
+func (sg *SubGraph) checkType(typeName string) bool {
+	typeDef, exists := schema.State().GetType(sg.Params.Type)
+	if !exists {
+		return false
+	}
+
+
+	predsMap := make(map[string]pb.Posting_ValType)
+	typeMap := make(map[string]string)
+	for _, field := range typeDef.Fields {
+		predsMap[field.Predicate] = field.ValueType
+		typeMap[field.Predicate] = field.ObjectTypeName
+	}
+
+	for _, child := range sg.Children {
+		valType, ok := predsMap[child.Attr]
+		if !ok {
+			return false
+		}
+
+		if valType == pb.Posting_OBJECT {
+			validChild := 
+		} else {
+
+		}
+	}
+	return true
 }
